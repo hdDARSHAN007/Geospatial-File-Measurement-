@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Bengaluru sample survey</name>
+
+    <Placemark>
+      <name>Benchmark A</name>
+      <description>Survey control point</description>
+      <Point><coordinates>77.5946,12.9716,0</coordinates></Point>
+    </Placemark>
+
+    <Placemark>
+      <name>Access road</name>
+      <description>Approx. 1.2 km road segment</description>
+      <LineString>
+        <coordinates>
+          77.5946,12.9716,0
+          77.6000,12.9740,0
+          77.6050,12.9780,0
+          77.6100,12.9800,0
+        </coordinates>
+      </LineString>
+    </Placemark>
+
+    <Placemark>
+      <name>Plot 1</name>
+      <description>Roughly 500 m x 500 m parcel</description>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              77.5900,12.9600,0
+              77.5946,12.9600,0
+              77.5946,12.9645,0
+              77.5900,12.9645,0
+              77.5900,12.9600,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+
+    <Placemark>
+      <name>Plot 2 (with courtyard)</name>
+      <description>Parcel with an inner hole, tests hole subtraction</description>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              77.6000,12.9600,0
+              77.6050,12.9600,0
+              77.6050,12.9650,0
+              77.6000,12.9650,0
+              77.6000,12.9600,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+        <innerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              77.6020,12.9620,0
+              77.6030,12.9620,0
+              77.6030,12.9630,0
+              77.6020,12.9630,0
+              77.6020,12.9620,0
+            </coordinates>
+          </LinearRing>
+        </innerBoundaryIs>
+      </Polygon>
+    </Placemark>
+
+    <Placemark>
+      <name>Mixed group</name>
+      <description>MultiGeometry of different types: returned with an "unsupported" note</description>
+      <MultiGeometry>
+        <Point><coordinates>77.6100,12.9700,0</coordinates></Point>
+        <LineString><coordinates>77.6100,12.9700,0 77.6120,12.9720,0</coordinates></LineString>
+      </MultiGeometry>
+    </Placemark>
+  </Document>
+</kml>
