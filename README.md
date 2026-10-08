@@ -10,6 +10,13 @@ are reprojected to a metric CRS first.
 
 ---
 
+## Demo
+
+![Swagger UI](docs/swagger.png)
+![Measurements response](docs/measurements.png)
+
+---
+
 ## Setup
 
 Requires Python 3.10+. The GeoPandas / pyogrio / pyproj wheels bundle GDAL and PROJ, so no
@@ -17,10 +24,10 @@ system GDAL install is needed.
 
 ```bash
 git clone https://github.com/hdDARSHAN007/Geospatial-File-Measurement-.git
-cd geo-measurement-api
+cd Geospatial-File-Measurement-
 
 python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+source .venv/bin/activate          # Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
 uvicorn app.main:app --reload      # http://localhost:8000
@@ -40,13 +47,13 @@ python scripts/make_sample_data.py
 
 ### Configuration (environment variables)
 
-| Variable          | Default            | Meaning                                  |
-|-------------------|--------------------|------------------------------------------|
-| `DATABASE_URL`    | `sqlite:///./geo.db` | Any SQLAlchemy URL                     |
-| `UPLOAD_DIR`      | `./uploads`        | Where uploaded files are stored          |
-| `MAX_UPLOAD_MB`   | `50`               | Max upload size                          |
-| `MAX_UNZIPPED_MB` | `500`              | Max total size of an extracted zip       |
-| `MAX_ZIP_ENTRIES` | `200`              | Max files inside a zip                   |
+| Variable          | Default              | Meaning                                  |
+|-------------------|----------------------|------------------------------------------|
+| `DATABASE_URL`    | `sqlite:///./geo.db` | Any SQLAlchemy URL                       |
+| `UPLOAD_DIR`      | `./uploads`          | Where uploaded files are stored          |
+| `MAX_UPLOAD_MB`   | `50`                 | Max upload size                          |
+| `MAX_UNZIPPED_MB` | `500`                | Max total size of an extracted zip       |
+| `MAX_ZIP_ENTRIES` | `200`                | Max files inside a zip                   |
 
 ---
 
@@ -64,6 +71,8 @@ python scripts/make_sample_data.py
 
 Pagination: `?limit=100&offset=0` (limit max 1000).
 
+> On Windows PowerShell use `curl.exe` instead of `curl`.
+
 ### Upload
 
 ```bash
@@ -71,7 +80,41 @@ curl -X POST http://localhost:8000/api/files/ -F "file=@sample_data/survey.kml"
 ```
 
 ```json
+{
+  "id": "4535e42512044b1e8248e3ad2897fd24",
+  "filename": "survey.kml",
+  "file_type": "kml",
+  "feature_count": 5,
+  "crs": "EPSG:4326",
+  "status": "COMPLETED",
+  "error": null,
+  "created_at": "2026-10-08T08:42:06.017446Z"
+}
+```
+
+Status codes: `201` ok · `400` wrong extension / empty file · `413` too large ·
+`422` file could not be processed (the body contains the reason and a `file_id`; the failed
+upload is still recorded with status `FAILED`).
+
+```json
+{ "detail": { "message": "Shapefile is missing required component(s): .dbf", "file_id": "..." } }
+```
+
+### File information
+
+```bash
+curl http://localhost:8000/api/files/4535e42512044b1e8248e3ad2897fd24/
+```
+
+### Measurements
+
+```bash
+curl "http://localhost:8000/api/files/4535e42512044b1e8248e3ad2897fd24/measurements/"
+```
+
 Real output for `sample_data/survey.kml`:
+
+```json
 {
   "total": 5, "limit": 100, "offset": 0,
   "status": "COMPLETED",
@@ -97,59 +140,6 @@ Real output for `sample_data/survey.kml`:
                        "geodesic_value": 288083.6675 } },
     { "index": 4, "geometry_type": "GeometryCollection", "measurement": null,
       "note": "unsupported geometry type: GeometryCollection" }
-  ]
-}
-
-```
-
-Status codes: `201` ok · `400` wrong extension / empty file · `413` too large ·
-`422` file could not be processed (the body contains the reason and a `file_id`; the failed
-upload is still recorded with status `FAILED`).
-
-```json
-{ "detail": { "message": "Shapefile is missing required component(s): .dbf", "file_id": "..." } }
-```
-
-### File information
-
-```bash
-curl http://localhost:8000/api/files/3f9c1c0e5a7d4e6f8b2a1d9c4e7b6a50/
-```
-
-### Measurements
-
-```bash
-curl "http://localhost:8000/api/files/3f9c1c0e5a7d4e6f8b2a1d9c4e7b6a50/measurements/?limit=50"
-```
-
-(Values below are illustrative.)
-
-```json
-{
-  "total": 5, "limit": 50, "offset": 0,
-  "file_id": "3f9c1c0e5a7d4e6f8b2a1d9c4e7b6a50",
-  "status": "COMPLETED",
-  "summary": {
-    "total_area_square_meters": 436420.1873,
-    "total_length_meters": 1213.5521,
-    "measured_features": 3,
-    "features_with_notes": 1
-  },
-  "results": [
-    { "index": 0, "geometry_type": "Point", "crs": "EPSG:4326",
-      "measurement": null, "note": null },
-    { "index": 1, "geometry_type": "LineString", "crs": "EPSG:4326",
-      "measurement": { "type": "length", "value": 1213.5521, "unit": "meters",
-                       "method": "projected", "projected_crs": "EPSG:32643",
-                       "geodesic_value": 1213.0902 },
-      "note": null },
-    { "index": 2, "geometry_type": "Polygon", "crs": "EPSG:4326",
-      "measurement": { "type": "area", "value": 248512.7, "unit": "square_meters",
-                       "method": "projected", "projected_crs": "EPSG:32643",
-                       "geodesic_value": 248314.9 },
-      "note": null },
-    { "index": 4, "geometry_type": "GeometryCollection", "crs": "EPSG:4326",
-      "measurement": null, "note": "unsupported geometry type: GeometryCollection" }
   ]
 }
 ```
@@ -206,13 +196,13 @@ concepts, so each can be tested on its own.
 
 For each geometry (`services/measurements.py`):
 
-| Geometry                          | Result                                           |
-|-----------------------------------|--------------------------------------------------|
-| `Polygon`, `MultiPolygon`         | area in `square_meters` (holes are subtracted)   |
-| `LineString`, `MultiLineString`   | length in `meters`                               |
-| `Point`, `MultiPoint`             | no measurement (`measurement: null`)             |
-| empty / `GeometryCollection` / other | `measurement: null` + explanatory `note`      |
-| invalid polygon (e.g. bow-tie)    | measured, with a `note` that the result may be inaccurate |
+| Geometry                             | Result                                                    |
+|--------------------------------------|-----------------------------------------------------------|
+| `Polygon`, `MultiPolygon`            | area in `square_meters` (holes are subtracted)            |
+| `LineString`, `MultiLineString`      | length in `meters`                                        |
+| `Point`, `MultiPoint`                | no measurement (`measurement: null`)                      |
+| empty / `GeometryCollection` / other | `measurement: null` + explanatory `note`                  |
+| invalid polygon (e.g. bow-tie)       | measured, with a `note` that the result may be inaccurate |
 
 Measurement is wrapped so that one bad feature can never fail the whole upload.
 
@@ -239,32 +229,34 @@ Measurement is wrapped so that one bad feature can never fail the whole upload.
 validation, typed responses and Swagger docs with very little setup. Django's value
 (admin, ORM migrations, auth) is not needed here, and GeoDjango adds a heavy GDAL/GEOS
 system dependency.
-In the sample file, Plot 1 measures 248,760 m² (UTM) vs 248,472 m² (geodesic), about 0.1% apart, because the plots sit ~2.6° east of the zone's central meridian where UTM stretches slightly
 
-**Projected (UTM) vs geodesic measurement.** UTM is accurate to roughly 0.1% inside a zone and is easy to
-explain and verify (the "transform to a projected CRS" approach). Geodesic calculation is
-accurate everywhere and has no zone problems, but is less familiar to reviewers. I used UTM as the primary result
-and return the geodesic number alongside it, which makes the difference visible; the tests
-assert that they agree within the expected ~0.1-0.2%.
-*Alternatives considered:* a single equal-area CRS (e.g. a world equal-area projection) is good for area but
-distorts length; per-file instead of per-feature zone selection is cheaper but wrong for
+**Projected (UTM) vs geodesic measurement.** UTM is accurate to roughly 0.1% inside a zone and is
+easy to explain and verify (the "transform to a projected CRS" approach). Geodesic calculation is
+accurate everywhere and has no zone problems, but is less familiar to reviewers. I used UTM as the
+primary result and return the geodesic number alongside it, which makes the difference visible; the
+tests assert that they agree within the expected ~0.1-0.2%. In the sample file, Plot 1 measures
+248,760 m² (UTM) vs 248,472 m² (geodesic), about 0.1% apart, because the plots sit ~2.6° east of the
+zone's central meridian where UTM stretches slightly.
+*Alternatives considered:* a single equal-area CRS (e.g. a world equal-area projection) is good for
+area but distorts length; per-file instead of per-feature zone selection is cheaper but wrong for
 files that span several zones, so the zone is chosen per feature.
 
 **Per-feature zone selection.** Chosen from the centroid. Known limitations: a single
 feature spanning several UTM zones, or crossing the antimeridian, is measured in its
 centroid's zone (small error); the Norway/Svalbard zone exceptions are not applied.
 
-**SQLite + SQLAlchemy.** Zero setup for a reviewer, yet a real relational model; switching to PostgreSQL
-is a one-line `DATABASE_URL` change. Geometries are stored as GeoJSON in a JSON column and
+**SQLite + SQLAlchemy.** Zero setup for a reviewer, yet a real relational model; switching to
+PostgreSQL is a one-line `DATABASE_URL` change. Geometries are stored as GeoJSON in a JSON column and
 measurements are also stored in plain `area_m2` / `length_m` columns so totals are computed by
-SQL aggregates rather than in Python. *Alternative:* PostGIS (better for spatial queries, but not needed for this task).
+SQL aggregates rather than in Python. *Alternative:* PostGIS (better for spatial queries, but not
+needed for this task).
 
 **Synchronous processing.** Parsing happens inside the upload request, so the response already
 contains the final status. This is simple and fine for files up to the size limit; the `status`
 field and the separate GET endpoints already match an asynchronous design (see Future scope).
 
-**Pagination.** Large files can contain tens of thousands of features, so the list endpoints take `limit` / `offset`;
-the measurement summary always covers the whole file.
+**Pagination.** Large files can contain tens of thousands of features, so the list endpoints take
+`limit` / `offset`; the measurement summary always covers the whole file.
 
 **Failed uploads are recorded.** A rejected file still gets an ID and a `FAILED` record with the
 error message, so a client can look the reason up later.
@@ -295,10 +287,3 @@ error message, so a client can look the reason up later.
 - Perimeter and 3D (Z-aware) length; filtering by geometry type; GeoJSON export of measured features.
 - Handling of antimeridian-crossing and multi-zone features by splitting geometries.
 - Docker image, CI (GitHub Actions running `pytest`), and structured logging / metrics.
-
-
-## Demo
-![Swagger UI](docs/swagger.png)
-![Measurements response](docs/measurements.png)
-
-![alt text](image.png)
