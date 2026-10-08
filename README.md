@@ -71,16 +71,35 @@ curl -X POST http://localhost:8000/api/files/ -F "file=@sample_data/survey.kml"
 ```
 
 ```json
+Real output for `sample_data/survey.kml`:
 {
-  "id": "3f9c1c0e5a7d4e6f8b2a1d9c4e7b6a50",
-  "filename": "survey.kml",
-  "file_type": "kml",
-  "feature_count": 5,
-  "crs": "EPSG:4326",
+  "total": 5, "limit": 100, "offset": 0,
   "status": "COMPLETED",
-  "error": null,
-  "created_at": "2026-10-07T07:00:00Z"
+  "summary": {
+    "total_area_square_meters": 537181.6248,
+    "total_length_meters": 1930.3004,
+    "measured_features": 3,
+    "features_with_notes": 1
+  },
+  "results": [
+    { "index": 0, "geometry_type": "Point", "measurement": null, "note": null },
+    { "index": 1, "geometry_type": "LineString",
+      "measurement": { "type": "length", "value": 1930.3004, "unit": "meters",
+                       "method": "projected", "projected_crs": "EPSG:32643",
+                       "geodesic_value": 1929.1698 } },
+    { "index": 2, "geometry_type": "Polygon",
+      "measurement": { "type": "area", "value": 248760.0301, "unit": "square_meters",
+                       "method": "projected", "projected_crs": "EPSG:32643",
+                       "geodesic_value": 248472.4064 } },
+    { "index": 3, "geometry_type": "Polygon",
+      "measurement": { "type": "area", "value": 288421.5947, "unit": "square_meters",
+                       "method": "projected", "projected_crs": "EPSG:32643",
+                       "geodesic_value": 288083.6675 } },
+    { "index": 4, "geometry_type": "GeometryCollection", "measurement": null,
+      "note": "unsupported geometry type: GeometryCollection" }
+  ]
 }
+
 ```
 
 Status codes: `201` ok · `400` wrong extension / empty file · `413` too large ·
@@ -220,6 +239,7 @@ Measurement is wrapped so that one bad feature can never fail the whole upload.
 validation, typed responses and Swagger docs with very little setup. Django's value
 (admin, ORM migrations, auth) is not needed here, and GeoDjango adds a heavy GDAL/GEOS
 system dependency.
+In the sample file, Plot 1 measures 248,760 m² (UTM) vs 248,472 m² (geodesic), about 0.1% apart, because the plots sit ~2.6° east of the zone's central meridian where UTM stretches slightly
 
 **Projected (UTM) vs geodesic measurement.** UTM is accurate to roughly 0.1% inside a zone and is easy to
 explain and verify (the "transform to a projected CRS" approach). Geodesic calculation is
@@ -275,3 +295,10 @@ error message, so a client can look the reason up later.
 - Perimeter and 3D (Z-aware) length; filtering by geometry type; GeoJSON export of measured features.
 - Handling of antimeridian-crossing and multi-zone features by splitting geometries.
 - Docker image, CI (GitHub Actions running `pytest`), and structured logging / metrics.
+
+
+## Demo
+![Swagger UI](docs/swagger.png)
+![Measurements response](docs/measurements.png)
+
+![alt text](image.png)
